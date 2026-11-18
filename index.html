@@ -400,7 +400,7 @@ function renderChips(){
     if(o[k]){ if(Object.keys(o).length===1){ toast('Залиш хоча б одну вправу'); return; } delete o[k]; } else o[k]=1;
     save(); renderChips(); if(current && !(ex&&(ex.done||ex.revealed))) next();
   });
-  const v=hasItVoice(); $('chipnote').textContent = on.listen && !v ? 'Слухання з’явиться, коли браузер матиме італійський голос.' : '';
+  const v=hasItVoice(); const ios=/iPhone|iPad|iPod/.test(navigator.userAgent); $('chipnote').textContent = on.listen && !v ? 'Слухання з’явиться, коли браузер матиме італійський голос.' : (ios ? 'Немає звуку? Перевір, чи iPhone не на беззвучному (перемикач збоку).' : '');
 }
 function distractors(c, field){
   const same = CARDS.filter(x=>x.t===c.t && x.id!==c.id && x[field]!==c[field]);
@@ -583,7 +583,7 @@ function say(t){
 try{ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=()=>{ speechSynthesis.getVoices(); }; }catch(e){}
 /* iOS: дозволити звук після першого дотику */
 let ttsUnlocked=false;
-function unlockTTS(){ if(ttsUnlocked) return; ttsUnlocked=true; try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; u.lang='it-IT'; speechSynthesis.speak(u); }catch(e){} }
+function unlockTTS(){ if(ttsUnlocked) return; ttsUnlocked=true; try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(e){} try{ const a=new Audio('data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA=='); a.setAttribute('playsinline',''); a.loop=true; a.volume=0.01; a.play().catch(()=>{}); window.__keepAudio=a; }catch(e){} try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; u.lang='it-IT'; speechSynthesis.speak(u); }catch(e){} }
 ['touchend','click'].forEach(ev=>document.addEventListener(ev,unlockTTS,{once:false,passive:true,capture:true}));
 document.addEventListener('keydown',e=>{
   if(!current || P || $('v-learn').hidden || e.target.matches('input,select,textarea')) return;
