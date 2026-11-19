@@ -658,9 +658,8 @@ $('exp').onclick=async()=>{ const code=packProgress();
   try{ await navigator.clipboard.writeText(code); $('xferNote').textContent='Код скопійовано. На іншому пристрої відкрий Налаштування → «Вставити код».'; }
   catch(e){ $('impBox').hidden=false; $('impTxt').value=code; $('impTxt').select(); $('xferNote').textContent='Скопіюй цей код вручну.'; } };
 $('sendProg').onclick=async()=>{ const txt='Мій прогрес у Quaderno:\n'+packProgress(); const n=$('sendNote');
-  try{ if(navigator.share){ await navigator.share({text:txt}); n.hidden=false; n.textContent='Якщо Claude не було серед варіантів, код уже можна вставити в чат: він скопійований.'; try{ await navigator.clipboard.writeText(txt);}catch(e){} return; } }catch(e){ if(e&&e.name==='AbortError') return; }
-  try{ await navigator.clipboard.writeText(txt); n.hidden=false; n.textContent='Скопійовано! Встав це в чат з Claude.'; }
-  catch(e){ n.hidden=false; n.textContent=txt; } };
+  let copied=false; try{ await navigator.clipboard.writeText(txt); copied=true; }catch(e){}
+  n.hidden=false; n.textContent = copied ? 'Скопійовано! Встав це в чат з Claude.' : txt; };
 $('impOpen').onclick=()=>{ $('impBox').hidden=false; $('impTxt').value=''; $('impTxt').focus(); };
 $('impGo').onclick=()=>{ try{ const x=JSON.parse(decodeURIComponent(escape(atob($('impTxt').value.trim())))); if(!x.s) throw 0;
     merge(x); save(); bindOpts(); renderChips(); $('impBox').hidden=true; $('xferNote').textContent='Прогрес перенесено: '+Object.keys(S.s).length+' слів.'; }
