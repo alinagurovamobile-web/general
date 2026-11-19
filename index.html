@@ -371,11 +371,12 @@ function check(input, it){
   return {g:0,msg:''};
 }
 function hasItVoice(){ try{ return 'speechSynthesis' in window && speechSynthesis.getVoices().some(v=>/^it/i.test(v.lang)); }catch(e){ return false; } }
-const EXT = [['card','Картки','згадати переклад'],['mc','Вибір перекладу','італ. → укр.'],['rmc','Італійське слово','укр. → італ.'],['listen','Слухання','на слух'],['type','Написання','ввести слово'],['anagram','Збери слово','з літер'],['tf','Правда чи ні','швидко'],['cloze','Пропущені літери','з підказкою']];
+const EXT = [['card','Картки','згадати переклад'],['mc','Вибір перекладу','італ. → укр.'],['rmc','Італійське слово','укр. → італ.'],['rcard','Згадай італійською','укр. → італ., без підказок'],['listen','Слухання','на слух'],['type','Написання','ввести слово'],['anagram','Збери слово','з літер'],['tf','Правда чи ні','швидко'],['cloze','Пропущені літери','з підказкою']];
 function types(){
   let o=S.opt.types;
   if(!o){ o={card:1,mc:1,rmc:1,listen:1,type:1}; if(S.opt.ex==='cards') o={card:1}; if(S.opt.ex==='nowrite') delete o.type; S.opt.types=o; }
   if(!S.opt.typesV2){ S.opt.typesV2=1; o.anagram=1; o.tf=1; o.cloze=1; }
+  if(!S.opt.typesV3){ S.opt.typesV3=1; o.rcard=1; }
   return o;
 }
 function pickType(item){
@@ -383,10 +384,10 @@ function pickType(item){
   if(item.intro) return 'card';
   const short = answers(c.it).some(s=>s.split(' ').length<=3 && s.length<=22);
   const tgt = target(c.it), agOk = tgt.length>=3 && tgt.replace(/ /g,'').length<=14 && /^[a-zàèéìòùç' ]+$/i.test(tgt);
-  const ok = t => on[t] && ((t!=='type'&&t!=='cloze')||short) && (t!=='anagram'||agOk) && (t!=='listen'||hasItVoice()) && !(item.again && t==='card' && Object.keys(on).length>1);
+  const ok = t => on[t] && ((t!=='type'&&t!=='cloze')||short) && (t!=='anagram'||agOk) && (t!=='listen'||hasItVoice()) && !(item.again && (t==='card'||t==='rcard') && Object.keys(on).length>1);
   if(item.practice){ const p=['mc','tf','anagram','rmc','cloze','listen','mc'].filter(ok); if(p.length) return p[Math.floor(Math.random()*p.length)]; }
   const young = !a || a[1]<7;
-  let pool = (young ? ['mc','mc','rmc','card','listen','tf','anagram','cloze'] : ['rmc','card','type','type','listen','anagram','cloze','tf']).filter(ok);
+  let pool = (young ? ['mc','mc','rmc','card','rcard','listen','tf','anagram','cloze'] : ['rmc','card','rcard','rcard','type','type','listen','anagram','cloze','tf']).filter(ok);
   if(!pool.length) pool = EXT.map(x=>x[0]).filter(ok);
   return pool[Math.floor(Math.random()*pool.length)] || 'card';
 }
@@ -432,8 +433,12 @@ function render(){
   const c=current.c, a=st(c.id), topic=TOPICS[c.t];
   const tag = current.practice?'закріплення':current.intro?'нове слово':(current.again?'ще раз':'повторення');
   let body='', actions='';
-  if(ex.type==='card'){
-    body = `<div class="front" lang="it">${esc(c.it)}</div>
+  if(ex.type==='card'||ex.type==='rcard'){
+    const rv = ex.type==='rcard';
+    body = rv ? `<div class="front" lang="uk">${esc(c.uk)}</div>
+      <div class="back ${ex.revealed?'':'hide'}" lang="it">${esc(c.it)}</div>
+      ${ex.revealed?'':`<div class="hint">Як це італійською? Скажи вголос, потім перевір.</div>`}`
+    : `<div class="front" lang="it">${esc(c.it)}</div>
       <div class="back ${ex.revealed?'':'hide'}" lang="uk">${esc(c.uk)}</div>
       ${ex.revealed?'':`<div class="hint">${current.intro?'Нове слово. Прочитай, послухай і відкрий переклад.':'Що це означає?'}</div>`}`;
     const g=[0,1,2,3].map(i=>days(preview(current.n||!a||a[3]===0?null:a,i)));
@@ -444,7 +449,7 @@ function render(){
         <button class="g1" data-g="1" type="button">Важко<small>${g[1]}</small></button>
         <button class="g2" data-g="2" type="button">Згадала<small>${g[2]}</small></button>
         <button class="g3" data-g="3" type="button">Легко<small>${g[3]}</small></button></div>`)
-      : `<button class="reveal" id="rev" type="button">Показати переклад</button>`;
+      : `<button class="reveal" id="rev" type="button">${ex.type==='rcard'?'Показати італійською':'Показати переклад'}</button>`;
   } else if(ex.type==='mc' || ex.type==='rmc' || ex.type==='listen'){
     const prompt = ex.type==='rmc' ? `<div class="front" lang="uk">${esc(c.uk)}</div>`
       : ex.type==='listen' ? `<div class="front listen"><button class="play" id="play" type="button" aria-label="Прослухати ще раз">🔊</button>${ex.done?`<span lang="it">${esc(c.it)}</span>`:''}</div>`
@@ -485,7 +490,7 @@ function render(){
   el.innerHTML = `<div class="card ${ex.done? (ex.ok||ex.res&&ex.res.g>0?'ok':'bad'):''}" id="card">
     <div class="meta"><span class="tag ${current.n?'new':''}">${tag}</span><span>${esc(topic[0])} · ${fmtDate(topic[1])}</span></div>
     <div class="extitle">${TITLES[ex.type]}</div>
-    ${ex.type!=='listen' && 'speechSynthesis' in window ? `<button class="speak" id="say" type="button" aria-label="Вимовити італійською" title="Вимовити італійською">🔊</button>`:''}
+    ${ex.type!=='listen' && !(ex.type==='rcard'&&!ex.revealed) && 'speechSynthesis' in window ? `<button class="speak" id="say" type="button" aria-label="Вимовити італійською" title="Вимовити італійською">🔊</button>`:''}
     ${body}</div>
     <div class="actions" style="margin-top:12px">${actions}</div>`;
   wire(c);
@@ -494,7 +499,7 @@ function feedback(ok, extra, html){ return `<div class="fb ${ok?'ok':'bad'}">${o
 function wire(c){
   const on=(id,f)=>{ const b=$(id); if(b) b.onclick=f; };
   on('say',()=>say(c.it)); on('play',()=>say(c.it));
-  on('rev',()=>{ ex.revealed=true; render(); if(current.intro) say(c.it); });
+  on('rev',()=>{ ex.revealed=true; render(); if(current.intro||ex.type==='rcard') say(c.it); });
   document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>grade(+b.dataset.g));
   document.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>choose(+b.dataset.o));
   on('go',()=>grade((ex.type==='type'||ex.type==='cloze')? ex.res.g : ex.type==='anagram' ? (ex.ok?(ex.miss?1:2):0) : (ex.ok?2:0)));
@@ -585,7 +590,7 @@ function unlockTTS(){ if(ttsUnlocked) return; ttsUnlocked=true; try{ if(navigato
 ['touchend','click'].forEach(ev=>document.addEventListener(ev,unlockTTS,{once:false,passive:true,capture:true}));
 document.addEventListener('keydown',e=>{
   if(!current || P || $('v-learn').hidden || e.target.matches('input,select,textarea')) return;
-  if(ex.type==='card'){
+  if(ex.type==='card'||ex.type==='rcard'){
     if(!ex.revealed && (e.key===' '||e.key==='Enter')){ e.preventDefault(); ex.revealed=true; render(); }
     else if(ex.revealed && !current.intro && '1234'.includes(e.key)) grade(+e.key-1);
   } else if(!ex.done && ex.opts && '1234'.includes(e.key)){ choose(+e.key-1); }
