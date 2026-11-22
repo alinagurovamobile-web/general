@@ -740,4 +740,4 @@ setSync('Прогрес зберігається в цьому браузері.
 })();
 </script>
 
-<script>try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');</script></body></html>
+<script>try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{const up=()=>r.update().catch(()=>{});document.addEventListener('visibilitychange',()=>{if(!document.hidden)up();});setInterval(up,30*60*1000);});let rl=false;const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had&&!rl){rl=true;location.reload();}});}</script></body></html>
