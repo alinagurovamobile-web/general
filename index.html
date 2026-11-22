@@ -33,6 +33,10 @@ section[hidden]{display:none}
 .stack{display:flex;flex-direction:column;gap:16px;margin-top:18px}
 /* today bar */
 .today{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sess{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;font-size:14px;font-variant-numeric:tabular-nums}
+.sess .meter{height:10px}
+.sess .meter i{transition:width .3s}
+.sessnote{font-size:12px;color:var(--muted);margin:-8px 0 10px}
 .plan{display:flex;flex-direction:column;gap:12px}
 .plan h2{font-size:17px}
 .step{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center}
@@ -203,7 +207,7 @@ nav button[aria-current="page"]{color:var(--ink);border-top-color:var(--red)}
         <li>Що краще знаєш слово, то рідше воно повертається: через 1, 3, 8 днів і далі. Коли проміжок доходить до 3 тижнів, слово вважається вивченим.</li>
       </ul></details>
     </div>
-    <div class="exsel"><div class="lbl">Вправи</div><div class="chips" id="chips" role="group" aria-label="Які вправи показувати"></div><div class="note" id="chipnote"></div></div>
+    <details class="how exsel"><summary id="exsum">Вправи</summary><div class="note" style="margin:6px 0">Вправи йдуть від легких до складних: на початку вибір і «правда чи ні», потім збирання і написання, а наприкінці писати слово повністю й диктант.</div><div class="chips" id="chips" role="group" aria-label="Які вправи показувати"></div><div class="note" id="chipnote"></div></details>
     <div id="stage"></div>
     <div class="toast" id="toast" role="status" hidden></div>
     <div class="note" id="howto"></div>
@@ -315,7 +319,7 @@ function logToday(){ const d=today(); return S.log[d] || (S.log[d]=[0,0]); }
 const $ = id => document.getElementById(id);
 const esc = s => s.replace(/[&<>"]/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 function days(n){ if(n===0) return 'зараз'; if(n===1) return '1 день'; if(n<5) return n+' дні'; if(n<30) return n+' дн.'; return Math.round(n/30)+' міс.'; }
-let queue = [], current = null, sessionExtra = 0, combo = 0, best = 0, sess = {ok:0, all:0};
+let queue = [], current = null, sessionExtra = 0, combo = 0, best = 0, sess = {ok:0, all:0}, sDone = 0;
 let ex = null; // current exercise state
 function buildQueue(){
   const d = today(), L = logToday();
@@ -354,6 +358,7 @@ function preview(a, g){
   return Math.max(iv+2, Math.round(iv*e*1.3));
 }
 function grade(g){
+  sDone++;
   if(queue[0] && queue[0].practice){
     const it=queue.shift(); sess.all++;
     if(g>0){ sess.ok++; combo++; best=Math.max(best,combo); } else { combo=0; queue.splice(Math.min(queue.length,3),0,it); }
@@ -405,12 +410,14 @@ function check(input, it){
   return {g:0,msg:''};
 }
 function hasItVoice(){ try{ return 'speechSynthesis' in window && speechSynthesis.getVoices().some(v=>/^it/i.test(v.lang)); }catch(e){ return false; } }
-const EXT = [['card','Картки','згадати переклад'],['mc','Вибір перекладу','італ. → укр.'],['rmc','Італійське слово','укр. → італ.'],['rcard','Згадай італійською','укр. → італ., без підказок'],['listen','Слухання','на слух'],['type','Написання','ввести слово'],['anagram','Збери слово','з літер'],['tf','Правда чи ні','швидко'],['cloze','Пропущені літери','з підказкою']];
+const EXT = [['tf','Правда чи ні','легко'],['mc','Вибір перекладу','легко'],['card','Картки','легко'],['listen','Слухання','легко'],['rmc','Італійське слово','середнє'],['spell','Правильне написання','середнє'],['anagram','Збери слово','середнє'],['cloze','Пропущені літери','середнє'],['rcard','Згадай італійською','середнє'],['type','Написання','складно'],['dict','Диктант','складно']];
+const LV1=['tf','mc','card','listen'], LV2=['rmc','spell','anagram','cloze','rcard'], LV3=['type','dict'];
 function types(){
   let o=S.opt.types;
   if(!o){ o={card:1,mc:1,rmc:1,listen:1,type:1}; if(S.opt.ex==='cards') o={card:1}; if(S.opt.ex==='nowrite') delete o.type; S.opt.types=o; }
   if(!S.opt.typesV2){ S.opt.typesV2=1; o.anagram=1; o.tf=1; o.cloze=1; }
   if(!S.opt.typesV3){ S.opt.typesV3=1; o.rcard=1; }
+  if(!S.opt.typesV4){ S.opt.typesV4=1; o.spell=1; o.dict=1; }
   return o;
 }
 function pickType(item){
@@ -418,15 +425,25 @@ function pickType(item){
   if(item.intro) return 'card';
   const short = answers(c.it).some(s=>s.split(' ').length<=3 && s.length<=22);
   const tgt = target(c.it), agOk = tgt.length>=3 && tgt.replace(/ /g,'').length<=14 && /^[a-zàèéìòùç' ]+$/i.test(tgt);
-  const ok = t => on[t] && ((t!=='type'&&t!=='cloze')||short) && (t!=='anagram'||agOk) && (t!=='listen'||hasItVoice()) && !(item.again && (t==='card'||t==='rcard') && Object.keys(on).length>1);
-  if(item.practice){ const p=['mc','tf','anagram','rmc','cloze','listen','mc'].filter(ok); if(p.length) return p[Math.floor(Math.random()*p.length)]; }
-  const young = !a || a[1]<7;
-  let pool = (young ? ['mc','mc','rmc','card','rcard','listen','tf','anagram','cloze'] : ['rmc','card','rcard','rcard','type','type','listen','anagram','cloze','tf']).filter(ok);
-  if(!pool.length) pool = EXT.map(x=>x[0]).filter(ok);
+  const ok = t => on[t] && ((t!=='type'&&t!=='cloze'&&t!=='dict')||short) && (t!=='dict'||hasItVoice()) && (t!=='spell'||misspell(tgt).length>=3) && (t!=='anagram'||agOk) && (t!=='listen'||hasItVoice()) && !(item.again && (t==='card'||t==='rcard') && Object.keys(on).length>1);
+  const L=logToday(), q=queue.filter(x=>!x.again&&!x.practice);
+  const pick=arr=>{ const p=arr.filter(ok); return p.length? p[Math.floor(Math.random()*p.length)] : null; };
+  if(item.practice){ const nAll=L[0]+q.filter(x=>x.n).length, f2=nAll?L[0]/nAll:1;
+    const t=pick(f2<.5?['mc','tf','listen','mc']:['mc','rmc','spell','anagram','cloze','listen']); if(t) return t; }
+  const rAll=L[1]+q.filter(x=>!x.n).length, f=rAll?L[1]/rAll:1;
+  const young = !a || a[1]<3, seen = a && a[3]>=2;
+  let pool;
+  if(f<.4) pool = young ? LV1 : LV1.concat(LV2);
+  else if(f<.75 || !seen) pool = young ? LV1.concat(LV2) : LV2;
+  else pool = LV3.concat(LV3,['rcard']);
+  let t = pick(pool) || pick(LV2) || pick(LV1);
+  if(t) return t;
+  pool = EXT.map(x=>x[0]).filter(ok);
   return pool[Math.floor(Math.random()*pool.length)] || 'card';
 }
 function renderChips(){
   const on=types();
+  $('exsum').textContent = `Вправи: увімкнено ${EXT.filter(x=>on[x[0]]).length} з ${EXT.length}`;
   $('chips').innerHTML = EXT.map(([k,n])=>`<button type="button" class="chip" data-k="${k}" aria-pressed="${on[k]?'true':'false'}">${n}</button>`).join('');
   $('chips').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{
     const k=b.dataset.k, o=types();
@@ -450,15 +467,27 @@ function next(){
     ex = {type, done:false, revealed:false};
     if(type==='mc' || type==='listen'){ ex.opts = shuffle([c,...distractors(c,'uk')]).map(x=>({id:x.id,t:x.uk})); }
     if(type==='rmc'){ ex.opts = shuffle([c,...distractors(c,'it')]).map(x=>({id:x.id,t:x.it})); }
+    if(type==='spell'){ const w=target(c.it); ex.opts = shuffle([{id:c.id,t:w}, ...misspell(w).slice(0,3).map((t,k)=>({id:'x'+k,t}))]); }
     if(type==='tf'){ ex.truth = Math.random()<.5; ex.claim = ex.truth ? c.uk : distractors(c,'uk')[0].uk; if(ex.claim===c.uk) ex.truth=true; }
     if(type==='anagram'){ ex.tgt=target(c.it); ex.built=''; ex.miss=0; ex.tiles=shuffle([...ex.tgt.replace(/ /g,'')].map((ch,i)=>({ch,i,used:false}))); ex.shake=-1; skipSpaces(); }
     if(type==='cloze'){ const w=target(c.it); ex.mask=[...w].map((ch,i)=>(i===0||!/[a-zàèéìòù]/i.test(ch)||((i*7+parseInt(c.id,16))%5>=2))?ch:'_').join(''); }
   }
   render(); counts(); renderStreak();
-  if(current && ex.type==='listen') setTimeout(()=>say(current.c.it),250);
+  if(current && (ex.type==='listen'||ex.type==='dict')) setTimeout(()=>say(current.c.it),250);
 }
-const TITLES = {card:'Згадай переклад', mc:'Обери переклад', rmc:'Як це італійською?', listen:'Послухай і обери переклад', type:'Напиши італійською', anagram:'Збери слово з літер', tf:'Правда чи ні?', cloze:'Встав пропущені літери'};
+const TITLES = {spell:'Обери правильне написання', dict:'Диктант: послухай і напиши', card:'Згадай переклад', mc:'Обери переклад', rmc:'Як це італійською?', listen:'Послухай і обери переклад', type:'Напиши італійською', anagram:'Збери слово з літер', tf:'Правда чи ні?', cloze:'Встав пропущені літери'};
 function target(it){ return answers(it)[0].replace(/\s+/g,' ').trim(); }
+function misspell(full){
+  const m=full.match(ARTS), pre=m?m[0]:'', w=full.slice(pre.length), V='aeiou', L=w.length, cons=/[bcdfglmnprstvz]/;
+  const tiers=[[],[],[],[]], seen=new Set([full]);
+  const add=(t,x)=>{ x=pre+x; if(!seen.has(x) && !/  /.test(x)){ seen.add(x); tiers[t].push(x); } };
+  for(let i=1;i<L;i++){ const ch=w[i];
+    if(cons.test(ch) && w[i-1]!==' '){ if(w[i+1]===ch) add(0,w.slice(0,i)+w.slice(i+1)); else if(w[i-1]!==ch && V.includes(w[i+1]||'') && V.includes(w[i-1])) add(0,w.slice(0,i)+ch+w.slice(i)); } }
+  [['gli','li'],['gn','n'],['ch','c'],['sc','s'],['qu','cu'],['zz','z'],['ce','cie'],['ge','gie']].forEach(([a,b])=>{ if(w.includes(a)) add(1,w.replace(a,b)); });
+  for(let i=1;i<L-1;i++){ const ch=w[i]; if(V.includes(ch)){ add(2,w.slice(0,i)+({a:'e',e:'i',i:'e',o:'u',u:'o'})[ch]+w.slice(i+1)); } }
+  for(let i=1;i<L-2;i++) if(w[i]!==' '&&w[i+1]!==' '&&w[i]!==w[i+1]) add(3,w.slice(0,i)+w[i+1]+w[i]+w.slice(i+2));
+  return tiers.flatMap(t=>shuffle(t));
+}
 function skipSpaces(){ while(ex.built.length<ex.tgt.length && ex.tgt[ex.built.length]===' ') ex.built+=' '; }
 function render(){
   const el = $('stage');
@@ -484,14 +513,15 @@ function render(){
         <button class="g2" data-g="2" type="button">Згадала<small>${g[2]}</small></button>
         <button class="g3" data-g="3" type="button">Легко<small>${g[3]}</small></button></div>`)
       : `<button class="reveal" id="rev" type="button">${ex.type==='rcard'?'Показати італійською':'Показати переклад'}</button>`;
-  } else if(ex.type==='mc' || ex.type==='rmc' || ex.type==='listen'){
-    const prompt = ex.type==='rmc' ? `<div class="front" lang="uk">${esc(c.uk)}</div>`
+  } else if(ex.type==='mc' || ex.type==='rmc' || ex.type==='listen' || ex.type==='spell'){
+    const itOpts = ex.type==='rmc'||ex.type==='spell';
+    const prompt = itOpts ? `<div class="front" lang="uk">${esc(c.uk)}</div>`
       : ex.type==='listen' ? `<div class="front listen"><button class="play" id="play" type="button" aria-label="Прослухати ще раз">🔊</button>${ex.done?`<span lang="it">${esc(c.it)}</span>`:''}</div>`
       : `<div class="front" lang="it">${esc(c.it)}</div>`;
     body = prompt + `<div class="opts" role="group" aria-label="Варіанти">` + ex.opts.map((o,i)=>{
       let cls=''; if(ex.done){ if(o.id===c.id) cls='right'; else if(o.id===ex.pick) cls='wrong'; }
-      return `<button class="opt ${cls}" data-o="${i}" type="button" ${ex.done?'disabled':''} lang="${ex.type==='rmc'?'it':'uk'}"><kbd>${i+1}</kbd>${esc(o.t)}</button>`; }).join('') + `</div>`;
-    if(ex.done) body += feedback(ex.ok, ex.ok?'':`Правильно: ${esc(ex.type==='rmc'?c.it:c.uk)}`);
+      return `<button class="opt ${cls}" data-o="${i}" type="button" ${ex.done?'disabled':''} lang="${itOpts?'it':'uk'}"><kbd>${i+1}</kbd>${esc(o.t)}</button>`; }).join('') + `</div>`;
+    if(ex.done) body += feedback(ex.ok, ex.ok?'':`Правильно: ${esc(itOpts?c.it:c.uk)}`);
     actions = ex.done ? `<button class="reveal" id="go" type="button">Далі</button>` : '';
   } else if(ex.type==='tf'){
     body = `<div class="front" lang="it">${esc(c.it)}</div><div class="claim">= <span lang="uk">${esc(ex.claim)}</span>?</div>`;
@@ -512,8 +542,8 @@ function render(){
     actions = ex.done
       ? (ex.res.g===0 ? `<div class="grades two"><button class="g1" id="typo" type="button">Я знала, це описка</button><button class="reveal" id="go" type="button">Далі</button></div>` : `<button class="reveal" id="go" type="button">Далі</button>`)
       : `<div class="grades two"><button class="g0" id="idk" type="button">Не знаю</button><button class="reveal" id="chk" type="button">Перевірити</button></div>`;
-  } else if(ex.type==='type'){
-    body = `<div class="front" lang="uk">${esc(c.uk)}</div>
+  } else if(ex.type==='type' || ex.type==='dict'){
+    body = (ex.type==='dict' ? `<div class="front listen"><button class="play" id="play" type="button" aria-label="Прослухати ще раз">🔊</button>${ex.done?`<span lang="uk">${esc(c.uk)}</span>`:''}</div>` : `<div class="front" lang="uk">${esc(c.uk)}</div>`) + `
       <form id="tf" class="typeform" autocomplete="off"><input id="ti" lang="it" autocapitalize="off" spellcheck="false" placeholder="італійською…" ${ex.done?'disabled':''} value="${esc(ex.val||'')}">
       ${ex.done?'':'<div class="accents">'+['à','è','é','ì','ò','ù'].map(x=>`<button type="button" data-acc="${x}">${x}</button>`).join('')+'</div>'}</form>`;
     if(ex.done) body += feedback(ex.res.g>0, ex.res.g>0 ? `${ex.res.msg} <b lang="it">${esc(c.it)}</b>` : `Правильно: <b lang="it">${esc(c.it)}</b>`, true);
@@ -521,10 +551,13 @@ function render(){
       ? (ex.res.g===0 ? `<div class="grades two"><button class="g1" id="typo" type="button">Я знала, це описка</button><button class="reveal" id="go" type="button">Далі</button></div>` : `<button class="reveal" id="go" type="button">Далі</button>`)
       : `<div class="grades two"><button class="g0" id="idk" type="button">Не знаю</button><button class="reveal" id="chk" type="button">Перевірити</button></div>`;
   }
-  el.innerHTML = `<div class="card ${ex.done? (ex.ok||ex.res&&ex.res.g>0?'ok':'bad'):''}" id="card">
+  const tot=sDone+queue.length, mins=Math.max(1,Math.round(queue.length*9/60));
+  el.innerHTML = `<div class="sess" aria-label="Прогрес тренування"><div class="meter"><i style="width:${Math.round(sDone/tot*100)}%;background:var(--pen)"></i></div><span><b>${sDone+1}</b> з ${tot}</span></div>
+    <div class="sessnote">${queue.length<=1?'Остання картка!':`Ще ${queue.length} ${(n=>n%10===1&&n%100!==11?'картка':n%10>=2&&n%10<=4&&(n%100<12||n%100>14)?'картки':'карток')(queue.length)} · приблизно ${mins} хв`}</div>
+    <div class="card ${ex.done? (ex.ok||ex.res&&ex.res.g>0?'ok':'bad'):''}" id="card">
     <div class="meta"><span class="tag ${current.n?'new':''}">${tag}</span><span>${esc(topic[0])} · ${fmtDate(topic[1])}</span></div>
     <div class="extitle">${TITLES[ex.type]}</div>
-    ${ex.type!=='listen' && !(ex.type==='rcard'&&!ex.revealed) && 'speechSynthesis' in window ? `<button class="speak" id="say" type="button" aria-label="Вимовити італійською" title="Вимовити італійською">🔊</button>`:''}
+    ${ex.type!=='listen' && ex.type!=='dict' && !(ex.type==='rcard'&&!ex.revealed) && 'speechSynthesis' in window ? `<button class="speak" id="say" type="button" aria-label="Вимовити італійською" title="Вимовити італійською">🔊</button>`:''}
     ${body}</div>
     <div class="actions" style="margin-top:12px">${actions}</div>`;
   wire(c);
@@ -536,7 +569,7 @@ function wire(c){
   on('rev',()=>{ ex.revealed=true; render(); if(current.intro||ex.type==='rcard') say(c.it); });
   document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>grade(+b.dataset.g));
   document.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>choose(+b.dataset.o));
-  on('go',()=>grade((ex.type==='type'||ex.type==='cloze')? ex.res.g : ex.type==='anagram' ? (ex.ok?(ex.miss?1:2):0) : (ex.ok?2:0)));
+  on('go',()=>grade((ex.type==='type'||ex.type==='cloze'||ex.type==='dict')? ex.res.g : ex.type==='anagram' ? (ex.ok?(ex.miss?1:2):0) : (ex.ok?2:0)));
   on('typo',()=>grade(1));
   on('idk',()=>{ ex.val=''; ex.res={g:0,msg:''}; ex.done=true; render(); say(c.it); });
   on('chk',submitType);
@@ -577,7 +610,7 @@ function renderDone(el){
     ${pairsOk?'<p class="note">Тренування не змінює розклад повторень, це просто зайва практика у різних вправах.</p>':''}</div>`;
   if(more) $('plus').onclick=()=>{ sessionExtra+=5; buildQueue(); next(); };
   if(pairsOk) $('pairs').onclick=startPairs;
-  if(pairsOk) $('drill').onclick=()=>{ const pool=CARDS.filter(c=>st(c.id)).sort((x,y)=>st(x.id)[1]-st(y.id)[1]); queue=shuffle(pool.slice(0,30)).slice(0,10).map(c=>({c,n:false,practice:true})); next(); };
+  if(pairsOk) $('drill').onclick=()=>{ const pool=CARDS.filter(c=>st(c.id)).sort((x,y)=>st(x.id)[1]-st(y.id)[1]); sDone=0; queue=shuffle(pool.slice(0,30)).slice(0,10).map(c=>({c,n:false,practice:true})); next(); };
   $('howto').hidden=true;
 }
 // ---------- pairs mini-game (no effect on schedule) ----------
