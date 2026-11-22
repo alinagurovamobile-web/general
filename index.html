@@ -33,6 +33,25 @@ section[hidden]{display:none}
 .stack{display:flex;flex-direction:column;gap:16px;margin-top:18px}
 /* today bar */
 .today{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.plan{display:flex;flex-direction:column;gap:12px}
+.plan h2{font-size:17px}
+.step{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center}
+.step .num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 12px var(--body);background:var(--soft);color:var(--muted)}
+.step.on .num{background:var(--pen);color:#fff}
+.step.ok .num{background:var(--good);color:#fff}
+.step .t{font-weight:600}
+.step .c{font-variant-numeric:tabular-nums;font-size:14px;color:var(--muted)}
+.step .meter{grid-column:2/-1;height:7px}
+.step .meter i{transition:width .3s}
+.step .s{grid-column:2/-1;font-size:12px;color:var(--muted)}
+details.how{font-size:13px;color:var(--muted)}
+details.how summary{cursor:pointer;color:var(--pen);font-weight:500}
+details.how ul{margin:6px 0 0;padding-left:18px}
+.stages{display:flex;flex-direction:column;gap:8px}
+.stage{display:grid;grid-template-columns:12px 1fr auto;gap:2px 10px;align-items:center}
+.stage i{width:12px;height:12px;border-radius:3px;background:var(--c)}
+.stage b{font-variant-numeric:tabular-nums}
+.stage small{grid-column:2/-1;color:var(--muted);font-size:12px}
 .pill{background:var(--sheet);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .pill .n{font-family:var(--display);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
 .pill.new .n{color:var(--pen)} .pill.rev .n{color:var(--good)} .pill.left .n{color:var(--ink)}
@@ -165,12 +184,19 @@ nav button[aria-current="page"]{color:var(--ink);border-top-color:var(--red)}
   </header>
 
   <section id="v-learn" class="stack">
-    <div class="today">
-      <div class="pill new"><div class="lbl">Нові</div><div class="n" id="cNew">0</div></div>
-      <div class="pill rev"><div class="lbl">Повторити</div><div class="n" id="cRev">0</div></div>
-      <div class="pill left"><div class="lbl">Зроблено</div><div class="n" id="cDone">0</div></div>
+    <div class="panel plan">
+      <div class="goalline"><h2 id="planTitle">План на сьогодні</h2><span id="combo"></span></div>
+      <div class="step" id="st1"><span class="num">1</span><span class="t">Повторити старі слова</span><span class="c" id="c1"></span>
+        <div class="meter"><i id="b1" style="background:var(--good)"></i></div><span class="s" id="s1"></span></div>
+      <div class="step" id="st2"><span class="num">2</span><span class="t">Вивчити нові слова</span><span class="c" id="c2"></span>
+        <div class="meter"><i id="b2" style="background:var(--pen)"></i></div><span class="s" id="s2"></span></div>
+      <details class="how"><summary>Як це працює</summary><ul>
+        <li>Спершу повторюєш слова, яким сьогодні настав час. Так вони не забуваються.</li>
+        <li>Потім нові слова: картка, а одразу за нею коротка вправа на закріплення.</li>
+        <li>Якщо помилилася, слово повернеться ще раз у цьому ж кроці. До плану воно не додається.</li>
+        <li>Що краще знаєш слово, то рідше воно повертається: через 1, 3, 8 днів і далі. Коли проміжок доходить до 3 тижнів, слово вважається вивченим.</li>
+      </ul></details>
     </div>
-    <div class="goal"><div class="goalline"><span id="goalTxt"></span><span id="combo"></span></div><div class="meter"><i id="goalBar" style="background:var(--red)"></i></div></div>
     <div class="exsel"><div class="lbl">Вправи</div><div class="chips" id="chips" role="group" aria-label="Які вправи показувати"></div><div class="note" id="chipnote"></div></div>
     <div id="stage"></div>
     <div class="toast" id="toast" role="status" hidden></div>
@@ -183,12 +209,7 @@ nav button[aria-current="page"]{color:var(--ink);border-top-color:var(--red)}
     <div class="panel">
       <div class="lbl">Усього слів з уроків: <span id="sTotal"></span></div>
       <div class="meter" id="sMeter"></div>
-      <div class="legend">
-        <span style="--c:var(--good)">Вивчено <b id="sL">0</b></span>
-        <span style="--c:var(--hard)">Вчу <b id="sP">0</b></span>
-        <span style="--c:var(--soft)">Ще не бачила <b id="sN">0</b></span>
-      </div>
-      <div class="note">«Вивчено» означає, що слово повертається не частіше ніж раз на 3 тижні.</div>
+      <div class="stages" id="stages"></div>
     </div>
     <div class="panel">
       <div class="lbl">Повторення на найближчі 7 днів</div>
@@ -293,22 +314,24 @@ function buildQueue(){
   const newLeft = Math.max(0, S.opt.nw + sessionExtra - L[0]);
   const fresh = ordered().filter(c=>!st(c.id)).slice(0,newLeft);
   const rev = due.slice(0,revLeft);
-  queue = []; let i=0,j=0;
-  while(i<rev.length || j<fresh.length){
-    for(let k=0;k<3 && i<rev.length;k++) queue.push({c:rev[i++],n:false});
-    if(j<fresh.length){ const c=fresh[j++]; queue.push({c,n:true,intro:true}); }
-  }
+  queue = rev.map(c=>({c,n:false})).concat(fresh.map(c=>({c,n:true,intro:true})));
   counts();
 }
 function counts(){
   const q = queue.filter(x=>!x.again && !x.practice);
-  $('cNew').textContent = q.filter(x=>x.n).length;
-  $('cRev').textContent = q.filter(x=>!x.n).length;
-  const L = logToday(), done=L[0]+L[1], goal=done+q.length;
-  $('cDone').textContent = done;
-  const pct = goal ? Math.round(done/goal*100) : 100;
-  $('goalBar').style.width = pct+'%';
-  $('goalTxt').textContent = goal ? `Денна ціль: ${done} з ${goal}` : 'Денна ціль виконана';
+  const L = logToday();
+  const rLeft=q.filter(x=>!x.n).length, nLeft=q.filter(x=>x.n).length;
+  const rAll=L[1]+rLeft, nAll=L[0]+nLeft;
+  const phase = queue.length ? (queue[0].n || (queue[0].practice && !rLeft) ? 2 : 1) : 0;
+  const set=(k,done,all,ph,txtEmpty,txtLeft)=>{
+    $('c'+k).textContent = all ? `${done} з ${all}` : '—';
+    $('b'+k).style.width = (all? Math.round(done/all*100) : (k===1?100:0))+'%';
+    const el=$('st'+k); el.classList.toggle('on', phase===k); el.classList.toggle('ok', all>0 && done>=all || (k===1 && !all));
+    $('s'+k).textContent = !all ? txtEmpty : done>=all ? 'Готово ✓' : txtLeft(all-done);
+  };
+  set(1,L[1],rAll,phase,'Сьогодні повторювати нічого', n=>'Залишилось '+n+(phase===1?' · зараз цей крок':''));
+  set(2,L[0],nAll,phase,'Нових на сьогодні немає', n=>'Залишилось '+n+(phase===2?' · зараз цей крок':' · після повторення'));
+  $('planTitle').textContent = queue.length ? 'План на сьогодні' : 'План на сьогодні виконано ✓';
   $('combo').textContent = combo>=3 ? `🔥 ${combo} поспіль` : '';
 }
 function preview(a, g){
@@ -431,7 +454,7 @@ function render(){
   if(!current){ renderDone(el); return; }
   $('howto').hidden = true;
   const c=current.c, a=st(c.id), topic=TOPICS[c.t];
-  const tag = current.practice?'закріплення':current.intro?'нове слово':(current.again?'ще раз':'повторення');
+  const tag = current.practice?'крок 2 · закріплення':current.intro?'крок 2 · нове слово':(current.again?(current.n?'крок 2 · ще раз':'крок 1 · ще раз'):'крок 1 · повторення');
   let body='', actions='';
   if(ex.type==='card'||ex.type==='rcard'){
     const rv = ex.type==='rcard';
@@ -608,10 +631,16 @@ function renderStreak(){
 }
 function status(c){ const a=st(c.id); if(!a) return 0; return isLearned(a)?2:1; }
 function renderStats(){
-  const tot=CARDS.length; let l=0,p=0;
-  CARDS.forEach(c=>{const s=status(c); if(s===2) l++; else if(s===1) p++;});
-  $('sTotal').textContent=tot; $('sL').textContent=l; $('sP').textContent=p; $('sN').textContent=tot-l-p;
-  $('sMeter').innerHTML=`<i style="width:${l/tot*100}%;background:var(--good)"></i><i style="width:${p/tot*100}%;background:var(--hard)"></i>`;
+  const tot=CARDS.length; let l=0,m=0,y=0;
+  CARDS.forEach(c=>{const a=st(c.id); if(!a) return; if(a[1]>=21) l++; else if(a[1]>=7) m++; else y++;});
+  const n=tot-l-m-y;
+  $('sTotal').textContent=tot;
+  $('sMeter').innerHTML=`<i style="width:${l/tot*100}%;background:var(--good)"></i><i style="width:${m/tot*100}%;background:var(--easy)"></i><i style="width:${y/tot*100}%;background:var(--hard)"></i>`;
+  const row=(c,t,v,d)=>`<div class="stage" style="--c:${c}"><i></i><span>${t}</span><b>${v}</b><small>${d}</small></div>`;
+  $('stages').innerHTML = row('var(--good)','Вивчено',l,'Повертається раз на 3 тижні і рідше')
+    + row('var(--easy)','Закріплюю',m,'Повертається раз на 1–3 тижні')
+    + row('var(--hard)','Вчу',y,'Щойно почала: повертається через 1–6 днів')
+    + row('var(--line)','Ще не бачила',n,'Чекають у черзі нових слів');
   const d=today(), fc=[]; for(let i=0;i<7;i++) fc.push(0);
   CARDS.forEach(c=>{const a=st(c.id); if(a){ const k=Math.max(0,a[0]-d); if(k<7) fc[k]++; }});
   const mx=Math.max(1,...fc), wd=['нд','пн','вт','ср','чт','пт','сб'];
