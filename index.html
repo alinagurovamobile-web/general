@@ -687,8 +687,8 @@ function renderDone(el){
       <div><div class="big">${did?'Brava!':'Ciao!'}</div><p>${did?'План на сьогодні виконано':'Сьогодні нічого не заплановано'}</p></div></div>
     ${did?`<div class="kpis">${kpi('var(--pen)',L[0],plural(L[0],'нове слово','нові слова','нових слів'))}${kpi('var(--good)',L[1],plural(L[1],'повторення','повторення','повторень'))}
       ${acc!==null?kpi('var(--easy)',acc+'%','правильних відповідей'):kpi('var(--hard)',ip,'слів зараз у процесі')}${best>=3?kpi('var(--red)',best,'відповідей поспіль без помилок'):kpi('var(--easy)','≈ '+Math.max(1,Math.round(did*12/60))+' хв','занять сьогодні')}</div>`:''}
-    <div class="strk"><div class="l1">🔥 ${n} ${plural(n,'день','дні','днів')} поспіль</div><div class="week">${weekHTML()}</div>
-      <div class="l2">${tom?`Завтра чекає ${tom} ${plural(tom,'повторення','повторення','повторень')}. Зайди, щоб не перервати серію.`:'Завтра повторень немає, можна взяти нові слова.'}</div></div>
+    <div class="strk"><div class="l1">🔥 Ти займаєшся ${n} ${plural(n,'день','дні','днів')} поспіль</div><div class="week">${weekHTML()}</div>
+      <div class="l2">${tom?`Завтра тебе чекає ${tom} ${plural(tom,'слово','слова','слів')} на повторення. Позаймайся й завтра, і буде ${n+1} ${plural(n+1,'день','дні','днів')} поспіль. Якщо пропустиш день, лічильник почнеться з нуля.`:`Позаймайся й завтра, і буде ${n+1} ${plural(n+1,'день','дні','днів')} поспіль. Якщо пропустиш день, лічильник почнеться з нуля.`}</div></div>
     <div class="prog"><div style="display:flex;justify-content:space-between;gap:8px"><span>Вивчено <b>${lr}</b> з ${tot} слів</span><span style="color:var(--muted)">вчу ще ${ip}</span></div>
       <div class="meter"><i style="width:${lr/tot*100}%;background:var(--good)"></i><i style="width:${ip/tot*100}%;background:var(--hard)"></i></div></div>
     <div class="acts">${more?'<button class="reveal" id="plus" type="button">Ще 5 нових слів</button>':''}
