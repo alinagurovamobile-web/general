@@ -1,7 +1,7 @@
 name: Нагадування Quaderno
 on:
   schedule:
-    - cron: '0 17 * * *'   # 19:00 за Києвом (зима)
+    - cron: '30 22 * * *'   # 00:30 за Києвом (зима)
   workflow_dispatch:
   push:
     branches: [main]
