@@ -1,4 +1,4 @@
-const CACHE='quaderno-c6b73a25';
+const CACHE='quaderno-beaead90';
 const CORE=['./','index.html','manifest.webmanifest','icon-192.png','icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE.map(u=>new Request(u,{cache:'reload'})))).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE&&k!=='quaderno-state').map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
