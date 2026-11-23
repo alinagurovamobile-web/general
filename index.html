@@ -1,11 +1,11 @@
 <!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#cfe0f7"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Quaderno"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>Quaderno di parole</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=Caveat:wght@600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&display=swap">
 <style>
 /* Layout: one narrow notebook column; card in the middle, tabs at the bottom like a phone app */
 :root{
   --paper:#e6eefa; --grid:#e3e9f3; --b1:#a8cbf5; --b2:#c2c1f3; --b3:#9fe0ea; --ink:#1d2b4f; --muted:#5f6b85; --line:#d5dce9;
-  --pen:#2348b8; --red:#d2333a; --sheet:rgba(255,255,255,.82); --again:#c2410c; --hard:#a16207; --good:#15803d; --easy:#1d6fb8;
+  --pen:#2348b8; --red:#6a4fd6; --sheet:rgba(255,255,255,.82); --again:#c2410c; --hard:#a16207; --good:#15803d; --easy:#1d6fb8;
   --soft:#eef2fa; color-scheme:light;
   --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
   --body:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -13,7 +13,7 @@
 }
 :root[data-theme="dark"]{
   --paper:#0f1626; --grid:#1b2233; --b1:#17305a; --b2:#28245a; --b3:#0f3b4a; --ink:#e6eaf4; --muted:#9aa5bd; --line:#2a3349;
-  --pen:#8aa6ff; --red:#ff6b70; --sheet:rgba(24,32,53,.82); --again:#fb923c; --hard:#facc15; --good:#4ade80; --easy:#60a5fa;
+  --pen:#8aa6ff; --red:#b6a4ff; --sheet:rgba(24,32,53,.82); --again:#fb923c; --hard:#facc15; --good:#4ade80; --easy:#60a5fa;
   --soft:#1f2840; color-scheme:dark}
 html,body{height:100%}
 body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
@@ -24,7 +24,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 96px}
 header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 h1{font-family:var(--display);font-weight:700;font-size:26px;margin:0;letter-spacing:-.01em}
-h1 span{color:var(--red);font-family:var(--hand);font-size:30px;font-weight:600;margin-left:4px}
+h1 span{color:var(--pen);font-family:var(--display);font-size:20px;font-weight:500;margin-left:6px;opacity:.85}
 .streak{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .streak b{color:var(--ink)}
 h2{font-family:var(--display);font-size:19px;margin:0;text-wrap:balance}
@@ -80,7 +80,7 @@ section[hidden]{display:none}
 .fin .head{display:flex;align-items:center;gap:14px}
 .fin .ring{width:76px;height:76px}
 .fin .ring .rc b{font-size:28px;color:var(--good)}
-.fin .big{font-family:var(--hand);font-size:42px;color:var(--red);line-height:.9}
+.fin .big{font-family:var(--display);font-weight:700;font-size:34px;color:var(--good);line-height:1}
 .fin .head p{margin:4px 0 0;color:var(--muted);font-size:14px}
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .kpi{border-radius:12px;padding:10px 12px;background:color-mix(in srgb,var(--k) 9%,var(--sheet));border:1px solid color-mix(in srgb,var(--k) 20%,transparent)}
@@ -118,7 +118,7 @@ details.how ul{margin:6px 0 0;padding-left:18px}
 .tag{background:var(--soft);border-radius:999px;padding:2px 9px;font-weight:500}
 .tag.new{color:var(--pen)}
 .front{font-family:var(--display);font-weight:600;font-size:clamp(26px,7vw,34px);line-height:1.15;margin:auto 0 0;padding-top:28px;text-wrap:balance;overflow-wrap:anywhere}
-.back{margin:14px 0 auto;font-family:var(--hand);font-size:clamp(26px,6.5vw,32px);color:var(--pen);line-height:1.15;overflow-wrap:anywhere}
+.back{margin:14px 0 auto;font-family:var(--display);font-weight:600;font-size:clamp(24px,6vw,30px);color:var(--pen);line-height:1.15;overflow-wrap:anywhere}
 .back.hide{visibility:hidden}
 .hint{font-size:12px;color:var(--muted);margin-top:14px}
 .speak{position:absolute;right:14px;top:44px;border:1px solid var(--line);background:var(--sheet);color:var(--ink);border-radius:999px;width:36px;height:36px;cursor:pointer;font-size:16px}
@@ -132,7 +132,7 @@ details.how ul{margin:6px 0 0;padding-left:18px}
 .g0{color:var(--again)}.g1{color:var(--hard)}.g2{color:var(--good)}.g3{color:var(--easy)}
 button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--pen);outline-offset:2px}
 .done{text-align:center;padding:36px 22px 36px 46px}
-.done .big{font-family:var(--hand);font-size:40px;color:var(--red);line-height:1}
+.done .big{font-family:var(--display);font-weight:700;font-size:34px;color:var(--good);line-height:1}
 .done p{color:var(--muted);margin:10px 0 0}
 .more{margin-top:16px;background:none;border:1.5px dashed var(--line);color:var(--ink);border-radius:10px;padding:10px 14px;font:500 14px var(--body);cursor:pointer}
 /* progress */
@@ -686,7 +686,7 @@ function renderDone(el){
     <div class="head"><div class="ring full"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" class="trk"/><circle cx="50" cy="50" r="42" class="val" pathLength="100" style="stroke-dasharray:${did?100:0} 100"/></svg><div class="rc"><b>${did?'✓':'☕'}</b></div></div>
       <div><div class="big">${did?'Brava!':'Ciao!'}</div><p>${did?'План на сьогодні виконано':'Сьогодні нічого не заплановано'}</p></div></div>
     ${did?`<div class="kpis">${kpi('var(--pen)',L[0],plural(L[0],'нове слово','нові слова','нових слів'))}${kpi('var(--good)',L[1],plural(L[1],'повторення','повторення','повторень'))}
-      ${acc!==null?kpi('var(--easy)',acc+'%','правильних відповідей'):kpi('var(--hard)',ip,'слів зараз у процесі')}${best>=3?kpi('var(--again)',best,'відповідей поспіль без помилок'):kpi('var(--easy)','≈ '+Math.max(1,Math.round(did*12/60))+' хв','занять сьогодні')}</div>`:''}
+      ${acc!==null?kpi('var(--easy)',acc+'%','правильних відповідей'):kpi('var(--hard)',ip,'слів зараз у процесі')}${best>=3?kpi('var(--red)',best,'відповідей поспіль без помилок'):kpi('var(--easy)','≈ '+Math.max(1,Math.round(did*12/60))+' хв','занять сьогодні')}</div>`:''}
     <div class="strk"><div class="l1">🔥 ${n} ${plural(n,'день','дні','днів')} поспіль</div><div class="week">${weekHTML()}</div>
       <div class="l2">${tom?`Завтра чекає ${tom} ${plural(tom,'повторення','повторення','повторень')}. Зайди, щоб не перервати серію.`:'Завтра повторень немає, можна взяти нові слова.'}</div></div>
     <div class="prog"><div style="display:flex;justify-content:space-between;gap:8px"><span>Вивчено <b>${lr}</b> з ${tot} слів</span><span style="color:var(--muted)">вчу ще ${ip}</span></div>
