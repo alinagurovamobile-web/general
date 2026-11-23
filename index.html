@@ -72,6 +72,8 @@ details.how ul{margin:6px 0 0;padding-left:18px}
 .hint{font-size:12px;color:var(--muted);margin-top:14px}
 .speak{position:absolute;right:14px;top:44px;border:1px solid var(--line);background:var(--sheet);color:var(--ink);border-radius:999px;width:36px;height:36px;cursor:pointer;font-size:16px}
 .actions{display:grid;gap:8px}
+#stage .actions:not(:empty){position:sticky;bottom:calc(50px + env(safe-area-inset-bottom,0px));z-index:3;padding:10px 0 8px;
+  background:linear-gradient(to bottom,transparent,var(--paper) 30%)}
 .reveal{background:var(--ink);color:var(--paper);border:0;border-radius:12px;padding:14px;font:600 16px var(--body);cursor:pointer}
 .grades{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .grades button{border:1.5px solid currentColor;background:var(--sheet);border-radius:12px;padding:10px 4px;font:600 14px var(--body);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -480,6 +482,7 @@ function next(){
     if(type==='cloze'){ const w=target(c.it); ex.mask=[...w].map((ch,i)=>(i===0||!/[a-zàèéìòù]/i.test(ch)||((i*7+parseInt(c.id,16))%5>=2))?ch:'_').join(''); }
   }
   render(); counts(); renderStreak();
+  if(current){ const st=document.querySelector('#stage .sess'); if(st){ const r=st.getBoundingClientRect(); if(r.top<0 || r.top>innerHeight*0.35) window.scrollTo({top:scrollY+r.top-12, behavior:'smooth'}); } }
   if(current && (ex.type==='listen'||ex.type==='dict')) setTimeout(()=>say(current.c.it),250);
 }
 const TITLES = {spell:'Обери правильне написання', dict:'Диктант: послухай і напиши', card:'Згадай переклад', mc:'Обери переклад', rmc:'Як це італійською?', listen:'Послухай і обери переклад', type:'Напиши італійською', anagram:'Збери слово з літер', tf:'Правда чи ні?', cloze:'Встав пропущені літери'};
